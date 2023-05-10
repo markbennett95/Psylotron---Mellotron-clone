@@ -31,7 +31,7 @@ struct constante {
   const char gainMax;     // -9dB
   const byte antiRebond;  // 250ms
 
-} cst = {1900, -90, -12, -9, 250};
+} cst = {1900, -90, -12, -9, 50};
 
 struct globalVar {
 
@@ -63,6 +63,8 @@ struct globalPin {
 
 } pin = {0, 1, 2, 2, 3, 4, 5, 6, 7};
 
+const byte pitchKnob = A3;
+
 struct switchState {
 
   boolean half;
@@ -79,6 +81,7 @@ struct channel {
 
 };
 
+int pitchKnobReading = 0;
 channel channelA;
 channel channelB;
 
@@ -183,13 +186,13 @@ void handleNoteOn(byte channel, byte pitch, byte velocity)
 }
 void handleNoteOff(byte channel, byte pitch, byte velocity)
 {
-  int releaseTime = analogRead(pin.release) * 3;
+  int releaseTime = analogRead(pin.release);
   int trackA = track(channelA.bank, pitch);
   int trackB = track(channelB.bank, pitch) + 2000;
 
   if (state.split == LOW) {
 
-    if (releaseTime > 200) {
+    if (releaseTime > 75) {
       wTrig.trackFade(trackA, cst.volumeMin, releaseTime, 1);
       wTrig.trackFade(trackB, cst.volumeMin, releaseTime, 1);
     }
@@ -203,7 +206,7 @@ void handleNoteOff(byte channel, byte pitch, byte velocity)
     trackA = trackA + 12;
     trackB = trackB - 12;
 
-    if (releaseTime > 200) {
+    if (releaseTime > 75) {
       wTrig.trackFade(trackA, cst.volumeMin, releaseTime, 1);
       wTrig.trackFade(trackB, cst.volumeMin, releaseTime, 1);
     }
@@ -466,8 +469,6 @@ void setup()
   MIDI.setHandleNoteOff(handleNoteOff);
   MIDI.turnThruOff ();
 
-
-
   // Wav Trigger Init
   wTrig.start();
   wTrig.setAmpPwr(0);
@@ -553,40 +554,50 @@ void loop()
   state.half = digitalRead(pin.half);
   state.split = digitalRead(pin.split);
 
-
   // Master Volume
   int volumePot = analogRead(pin.master);
-  static int lastVolumePot = 0;
-  if (abs(volumePot - lastVolumePot) > 8) {
-    masterVolume(volumePot);
-    lastVolumePot = volumePot;
-  }
-
+  masterVolume(volumePot);
 
   // Cross Fade / SPLIT
-  var.crossfade = analogRead(pin.crossfade) ;
-  static int lastCrossFade = 0;
-  if (abs(var.crossfade - lastCrossFade) > 8) {
-    crossfader(var.crossfade) ;
-    lastCrossFade = var.crossfade;
-  }
+  var.crossfade = analogRead(pin.crossfade);
+  crossfader(var.crossfade);
 
   MIDI.read();
 
   static int melloPitch = 0;
 
+  // Change range from 0 -> 1023 to -128-> 127
+  pitchKnobReading = ((analogRead(pitchKnob) >> 2 ) - 128);
+
+  /* Multiply range to get +ve and -ve pitch bend
+  To set the range: wavTrigger divides an octave into 32768. So, a semi-tone is
+  32768/12 = 2730. Select a multiple of 2730 to get the semi-tone range up and down, then
+  divide by 128 to get the multipler shown below. 
+  For a 4th, 2730 * 4 = 10,922 , and then 10922/128 = 85
+  */
+  pitchKnobReading = 85 * pitchKnobReading; // 85 gives approx. a 4th up and down
+
   //Half Speed
   if (state.half == HIGH && melloPitch != -32768) {
 
-    melloPitch = melloPitch - 128;
+    melloPitch = melloPitch - 1024; 
+
+    if(melloPitch > pitchKnobReading) {
+      melloPitch = -32768;
+    }
     wTrig.samplerateOffset(melloPitch);
 
   }
 
   //Normal Speed
-  if (state.half == LOW && melloPitch != 0) {
+  if (state.half == LOW && melloPitch != pitchKnobReading) {
 
-    melloPitch = melloPitch + 128;
+    melloPitch = melloPitch + 1024;
+
+    if (melloPitch >= pitchKnobReading) {
+        melloPitch = pitchKnobReading;
+    }
+
     wTrig.samplerateOffset(melloPitch);
   }
 }
