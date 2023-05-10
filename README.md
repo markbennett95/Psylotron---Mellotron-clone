@@ -1,4 +1,4 @@
-# Psylotron---Mellotron-clone
+# NeontronV2---Mellotron-clone
 Arduino and wav trigger based Mellotron clone based on the Psylotron by Far Beyond Perception Instruments
 
 http://www.djsoulmachine.com/farbeyondperception/index.html
