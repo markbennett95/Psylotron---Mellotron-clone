@@ -13,7 +13,7 @@
 #include <LiquidCrystal_I2C.h>
 
 // Set the LCD address to 0x27 for a 16 chars and 2 line display
-LiquidCrystal_I2C lcd(0x27, 16, 2);
+LiquidCrystal_I2C lcd(0x27,16,2);
 
 //AltSoftSerial altSerial;
 //MIDI_CREATE_INSTANCE(AltSoftSerial, altSerial, MIDI);
@@ -31,7 +31,7 @@ struct constante {
   const char gainMax;     // -9dB
   const byte antiRebond;  // 250ms
 
-} cst = {1900, -90, -12, -9, 250};
+} cst = {1900, -90, -12, -9, 50};
 
 struct globalVar {
 
@@ -63,6 +63,8 @@ struct globalPin {
 
 } pin = {0, 1, 2, 2, 3, 4, 5, 6, 7};
 
+const byte pitchKnob = A3;
+
 struct switchState {
 
   boolean half;
@@ -79,6 +81,7 @@ struct channel {
 
 };
 
+int pitchKnobReading = 0;
 channel channelA;
 channel channelB;
 
@@ -183,13 +186,13 @@ void handleNoteOn(byte channel, byte pitch, byte velocity)
 }
 void handleNoteOff(byte channel, byte pitch, byte velocity)
 {
-  int releaseTime = analogRead(pin.release) * 3;
+  int releaseTime = analogRead(pin.release);
   int trackA = track(channelA.bank, pitch);
   int trackB = track(channelB.bank, pitch) + 2000;
 
   if (state.split == LOW) {
 
-    if (releaseTime > 200) {
+    if (releaseTime > 75) {
       wTrig.trackFade(trackA, cst.volumeMin, releaseTime, 1);
       wTrig.trackFade(trackB, cst.volumeMin, releaseTime, 1);
     }
@@ -203,7 +206,7 @@ void handleNoteOff(byte channel, byte pitch, byte velocity)
     trackA = trackA + 12;
     trackB = trackB - 12;
 
-    if (releaseTime > 200) {
+    if (releaseTime > 75) {
       wTrig.trackFade(trackA, cst.volumeMin, releaseTime, 1);
       wTrig.trackFade(trackB, cst.volumeMin, releaseTime, 1);
     }
@@ -273,75 +276,75 @@ void line1() {
   switch (channelA.bank)
   {
     case 0:
-      lcd.print(F("A00: Violins    "));
+      lcd.print(F("A: Mk2 Flute    "));
       break;
 
     case 100:
-      lcd.print(F("A01: Flutes     "));
+      lcd.print(F("A: Mk2 Ch. Organ"));
       break;
 
     case 200:
-      lcd.print(F("A02: Choir      "));
+      lcd.print(F("A: Mk2 Cello    "));
       break;
 
     case 300:
-      lcd.print(F("A03: Strings    "));
+      lcd.print(F("A: Mk2 3 Violins"));
       break;
 
     case 400:
-      lcd.print(F("A04: Vibes      "));
+      lcd.print(F("A: Mk2 Watcher  "));
       break;
 
     case 500:
-      lcd.print(F("A05: Organ      "));
+      lcd.print(F("A: Mk2 Brass    "));
       break;
 
     case 600:
-      lcd.print(F("A06: Bassoon    "));
+      lcd.print(F("A: Mk2 Trumpet  "));
       break;
 
     case 700:
-      lcd.print(F("A07: Cello      "));
+      lcd.print(F("A: Mk2 Sax Duet "));
       break;
 
     case 800:
-      lcd.print(F("A08: M300 Brass "));
+      lcd.print(F("A: M300 Violins "));
       break;
 
     case 900:
-      lcd.print(F("A09: Mixed Brass"));
+      lcd.print(F("A: M400 Strings "));
       break;
 
     case 1000:
-      lcd.print(F("A10: Teno & Alto"));
+      lcd.print(F("A: M400 8 Choir "));
       break;
 
     case 1100:
-      lcd.print(F("A11: Trom & Trum"));
+      lcd.print(F("A: M400 Pipe Or."));
       break;
 
     case 1200:
-      lcd.print(F("A12: Orchestra  "));
+      lcd.print(F("A: M400 Vibes   "));
       break;
 
     case 1300:
-      lcd.print(F("A13: Unused     "));
+      lcd.print(F("A: M400 Brass   "));
       break;
 
     case 1400:
-      lcd.print(F("A14: Unused     "));
+      lcd.print(F("A: M400 Trombone"));
       break;
 
     case 1500:
-      lcd.print(F("A15: Unused     "));
+      lcd.print(F("A: M400  Guitar "));
       break;
 
     case 1600:
-      lcd.print(F("A16: Unused     "));
+      lcd.print(F("A: T262 Perc Or."));
       break;
 
     case 1700:
-      lcd.print(F("A17: Unused     "));
+      lcd.print(F("A: T262 Verb Ens"));
       break;
 
     case 1800:
@@ -361,75 +364,75 @@ void line2() {
   switch (channelB.bank)
   {
     case 0:
-      lcd.print(F("B00: Violins    "));
+      lcd.print(F("B: Mk2 Flute    "));
       break;
 
     case 100:
-      lcd.print(F("B01: Flutes     "));
+      lcd.print(F("B: Mk2 Ch. Organ"));
       break;
 
     case 200:
-      lcd.print(F("B02: Choir      "));
+      lcd.print(F("B: Mk2 Cello    "));
       break;
 
     case 300:
-      lcd.print(F("B03: Strings    "));
+      lcd.print(F("B: Mk2 3 Violins"));
       break;
 
     case 400:
-      lcd.print(F("B04: Vibes      "));
+      lcd.print(F("B: Mk2 Woodwinds"));
       break;
 
     case 500:
-      lcd.print(F("B05: Organ      "));
+      lcd.print(F("B: Mk2 Brass    "));
       break;
 
     case 600:
-      lcd.print(F("B06: Bassoon    "));
+      lcd.print(F("B: Mk2 Trumpet  "));
       break;
 
     case 700:
-      lcd.print(F("B07: Cello      "));
+      lcd.print(F("B: Mk2 Accordian"));
       break;
 
     case 800:
-      lcd.print(F("B08: M300 Brass "));
+      lcd.print(F("B: M300 Violin  "));
       break;
 
     case 900:
-      lcd.print(F("B09: Mixed Brass"));
+      lcd.print(F("B: M300 Brass   "));
       break;
 
     case 1000:
-      lcd.print(F("B10: Teno & Alto"));
+      lcd.print(F("B: M400 8 Choir "));
       break;
 
     case 1100:
-      lcd.print(F("B11: Trom & Trum"));
+      lcd.print(F("B: M400 16 Choir"));
       break;
 
     case 1200:
-      lcd.print(F("B12: Orchestra  "));
+      lcd.print(F("B: M400 Vibes   "));
       break;
 
     case 1300:
-      lcd.print(F("B13: Unused     "));
+      lcd.print(F("B: M400 Brass   "));
       break;
 
     case 1400:
-      lcd.print(F("B14: Unused     "));
+      lcd.print(F("B: M400 Sax     "));
       break;
 
     case 1500:
-      lcd.print(F("B15: Unused     "));
+      lcd.print(F("B: M400 Piano   "));
       break;
 
     case 1600:
-      lcd.print(F("B16: Unused     "));
+      lcd.print(F("B: T262 Full    "));
       break;
 
     case 1700:
-      lcd.print(F("B17: Unused     "));
+      lcd.print(F("B: T262 Clarinet"));
       break;
 
     case 1800:
@@ -466,11 +469,9 @@ void setup()
   MIDI.setHandleNoteOff(handleNoteOff);
   MIDI.turnThruOff ();
 
-
-
   // Wav Trigger Init
   wTrig.start();
-  //wTrig.setAmpPwr(0);
+  wTrig.setAmpPwr(0);
   wTrig.masterGain(cst.gainMax);
 
 
@@ -490,37 +491,41 @@ void setup()
   lcd.init();
 
   // Turn on the blacklight and print a message.
-  //lcd.backlight();
+  lcd.backlight();
 
   lcd.setCursor(0, 0);
-  lcd.print(F("   FAR BEYOND   "));
+  lcd.print(F(" WELCOME TO AN  "));
 
   lcd.setCursor(0, 1);
-  lcd.print(F("   PERCEPTION   "));
-  delay(1000);
+  lcd.print(F(" ALTERED FUTURE "));
+  delay(1400);
 
   lcd.setCursor(0, 1);
   lcd.print(F("                "));
 
   lcd.setCursor(0, 0);
-  lcd.print(F("   PSYL()TRON"));
-  delay(250);
+  lcd.print(F("    NEONTRON  "));
+  delay(750);
 
   lcd.setCursor(0, 0);
-  lcd.print(F("   PSY(  )RON"));
-  delay(250);
+  lcd.print(F("   NEON()TRON "));
+  delay(300);
 
   lcd.setCursor(0, 0);
-  lcd.print(F("   PS(    )ON"));
-  delay(250);
+  lcd.print(F("   NEO(  )RON "));
+  delay(300);
 
   lcd.setCursor(0, 0);
-  lcd.print(F("   P(      )N"));
-  delay(250);
+  lcd.print(F("   NE(    )ON "));
+  delay(300);
 
   lcd.setCursor(0, 0);
-  lcd.print(F("   (        )"));
-  delay(250);
+  lcd.print(F("   N(      )N "));
+  delay(300);
+
+  lcd.setCursor(0, 0);
+  lcd.print(F("   (        ) "));
+  delay(400);
 
   line1();
   line2();
@@ -549,40 +554,50 @@ void loop()
   state.half = digitalRead(pin.half);
   state.split = digitalRead(pin.split);
 
-
   // Master Volume
   int volumePot = analogRead(pin.master);
-  static int lastVolumePot = 0;
-  if (abs(volumePot - lastVolumePot) > 8) {
-    masterVolume(volumePot);
-    lastVolumePot = volumePot;
-  }
-
+  masterVolume(volumePot);
 
   // Cross Fade / SPLIT
-  var.crossfade = analogRead(pin.crossfade) ;
-  static int lastCrossFade = 0;
-  if (abs(var.crossfade - lastCrossFade) > 8) {
-    crossfader(var.crossfade) ;
-    lastCrossFade = var.crossfade;
-  }
+  var.crossfade = analogRead(pin.crossfade);
+  crossfader(var.crossfade);
 
   MIDI.read();
 
   static int melloPitch = 0;
 
+  // Change range from 0 -> 1023 to -128-> 127
+  pitchKnobReading = ((analogRead(pitchKnob) >> 2 ) - 128);
+
+  /* Multiply range to get +ve and -ve pitch bend
+  To set the range: wavTrigger divides an octave into 32768. So, a semi-tone is
+  32768/12 = 2730. Select a multiple of 2730 to get the semi-tone range up and down, then
+  divide by 128 to get the multipler shown below. 
+  For a 4th, 2730 * 4 = 10,922 , and then 10922/128 = 85
+  */
+  pitchKnobReading = 85 * pitchKnobReading; // 85 gives approx. a 4th up and down
+
   //Half Speed
   if (state.half == HIGH && melloPitch != -32768) {
 
-    melloPitch = melloPitch - 128;
+    melloPitch = melloPitch - 1024; 
+
+    if(melloPitch > pitchKnobReading) {
+      melloPitch = -32768;
+    }
     wTrig.samplerateOffset(melloPitch);
 
   }
 
   //Normal Speed
-  if (state.half == LOW && melloPitch != 0) {
+  if (state.half == LOW && melloPitch != pitchKnobReading) {
 
-    melloPitch = melloPitch + 128;
+    melloPitch = melloPitch + 1024;
+
+    if (melloPitch >= pitchKnobReading) {
+        melloPitch = pitchKnobReading;
+    }
+
     wTrig.samplerateOffset(melloPitch);
   }
 }
